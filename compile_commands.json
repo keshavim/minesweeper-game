@@ -1,0 +1,21 @@
+[
+  {
+    "arguments": [
+      "/usr/sbin/clang",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-g",
+      "-O2",
+      "-Wdangling",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "output/.obj/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/keshavi/projects/minesweeper",
+    "file": "/home/keshavi/projects/minesweeper/src/main.c",
+    "output": "/home/keshavi/projects/minesweeper/output/.obj/main.o"
+  }
+]
