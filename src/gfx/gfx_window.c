@@ -96,18 +96,22 @@ static void key_callback(GLFWwindow *handle, int key, int scancode, int action,
 static void mousebutton_callback(GLFWwindow *handle, int button, int action,
                                  int mods) {
   window.mouse[button].down = action != GLFW_RELEASE;
+  
+  
+  
+
 }
 static void cursor_position_callback(GLFWwindow *handle, double xpos,
                                      double ypos) {
-  window.cursor_pos.x = xpos;
+ window.cursor_pos.x = xpos;
   window.cursor_pos.y = ypos;
 }
 
 static void framebuffer_size_callback(GLFWwindow *handle, int width,
                                       int height) {
   glViewport(0, 0, width, height);
-  window.size.x = width;
-  window.size.y = height;
+  //glfwSetWindowSize(handle, 1000, 800);
+
 }
 
 void window_init(void) {
@@ -123,6 +127,7 @@ void window_init(void) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
 
   /* Create a windowed mode window and its OpenGL context */
 
@@ -149,6 +154,11 @@ void window_init(void) {
   window.currentTime = glfwGetTime();
   window.lastTime = window.currentTime;
   window.deltaTime = 0;
+
+  glfwSetWindowPos(window.handle, 0, 0);
+  glfwFocusWindow(window.handle);
+  glfwSetCursorPos(window.handle, 500, 500);
+
 }
 
 void window_loop(void) {
@@ -174,16 +184,9 @@ void window_loop(void) {
       counter = 0;
       tempfps = 0;
     }
+    
 
-    if (window.key[GLFW_KEY_1].down) {
-      gameState_restart(5,5);
-    }
-    if (window.key[GLFW_KEY_2].down) {
-      gameState_restart(10,10);
-    }
-    if (window.key[GLFW_KEY_3].down) {
-      gameState_restart(15,15);
-    }
+    
 
     gameState_update();
     gameState_render();

@@ -3,10 +3,13 @@
 
 static f32 cell_open_Timer = 2.5f;
 
-GameObject gameobject_create(vec3s pos, vec2s size, enum Sprites sprite_idx,
+GameObject gameobject_create(vec3s pos, vec2s size, u32 sprite_idx,
                              bool *flags) {
-  GameObject self = {
-      .position = pos, .size = size, .sprite = &state.spriteList[sprite_idx]};
+  GameObject self = {.position = pos,
+                     .size = size,
+                     .sprite = &state.spriteList[sprite_idx],
+                     .start_sprite_idx = sprite_idx};
+
   for (u32 i = 0; i < FLAGS_COUNT; i++) {
     self.flags[i] = flags[i];
   }
@@ -16,31 +19,93 @@ void gameobject_addToBatch(GameObject *self) {
   self->batchOffset = state.renderer.numObjects * 4;
   batcher_addToBatch(&state.renderer, self->position, self->size, self->sprite);
 }
-void gameObject_update(GameObject *self) {
-  batcher_replaceInBatch(&state.renderer, self->batchOffset, self->position,
-                         self->size, self->sprite);
+
+static void __update_cell(GameObject *self) {
 
   if (window.mouse[GLFW_MOUSE_BUTTON_LEFT].down) {
     vec2s cursor_pos = ADJUSTED_CURSOR_POS;
     if (!gameobject_pointCollisionv(self, cursor_pos))
       return;
 
-    if (self->flags[FLAGS_ISCELL] && state.game_running) {
-      u32 numBombs = 0;
-      __check_Surrounding_cells(self->cell_idx, &numBombs);
+    u32 numBombs = 0;
+    __check_Surrounding_cells(self->cell_idx, &numBombs);
 
-      u32 sprite =
-          numBombs > 0 ? SPRITE_CELL_1 + numBombs - 1 : SPRITE_CELL_OPENED;
+    u32 sprite =
+        numBombs > 0 ? SPRITE_CELL_1 + numBombs - 1 : SPRITE_CELL_OPENED;
 
-      __open_cell(self, sprite);
-    }
+    __open_cell(self, sprite);
   }
-
   if (window.mouse[GLFW_MOUSE_BUTTON_RIGHT].down) {
     vec2s cursor_pos = ADJUSTED_CURSOR_POS;
     if (!gameobject_pointCollisionv(self, cursor_pos))
       return;
     __open_cell(self, SPRITE_FLAG);
+    return;
+  }
+  if (window.mouse[GLFW_MOUSE_BUTTON_LEFT].down &&
+      window.key[GLFW_KEY_LEFT_SHIFT].down) {
+    vec2s cursor_pos = ADJUSTED_CURSOR_POS;
+    if (!gameobject_pointCollisionv(self, cursor_pos))
+      return;
+    __open_cell(self, SPRITE_FLAG);
+    return;
+  }
+}
+
+static void __update_button(GameObject *self) {
+  if (window.mouse[GLFW_MOUSE_BUTTON_LEFT].down ||
+      window.mouse[GLFW_MOUSE_BUTTON_RIGHT].down) {
+    vec2s cursor_pos = ADJUSTED_CURSOR_POS;
+    if (!gameobject_pointCollisionv(self, cursor_pos))
+      return;
+    gameobject_setSprite(self, self->start_sprite_idx + 1);
+
+    if (self->start_sprite_idx == SPRITE_EASY_1) {
+      camera_setScale(&state.camera, 100, 100);
+      gameState_restart(16, 16);
+    } else if (self->start_sprite_idx == SPRITE_NORM_1) {
+      camera_setScale(&state.camera, 200, 200);
+      gameState_restart(32, 32);
+    } else if (self->start_sprite_idx == SPRITE_HARD_1) {
+      camera_setScale(&state.camera, 250, 250);
+      gameState_restart(40, 40);
+    }
+  } else {
+
+    gameobject_setSprite(self, self->start_sprite_idx);
+  }
+
+}
+
+void gameObject_update(GameObject *self) {
+  batcher_replaceInBatch(&state.renderer, self->batchOffset, self->position,
+                         self->size, self->sprite);
+
+  if (self->flags[FLAGS_ISCELL] && state.game_running) {
+    __update_cell(self);
+    return;
+  } else if (self->flags[FLAGS_ISCELL] && !state.game_running) {
+    if (self->flags[FLAGS_CELL_HASBOMB]) {
+      gameobject_setSprite(self, SPRITE_BOMB_1);
+    }
+    u32 numBombs = 0;
+    __check_Surrounding_cells(self->cell_idx, &numBombs);
+
+    u32 sprite =
+        numBombs > 0 ? SPRITE_CELL_1 + numBombs - 1 : SPRITE_CELL_OPENED;
+
+    __open_cell(self, sprite);
+    return;
+  }
+  if (self->flags[FLAGS_ISBUTTON]) {
+    __update_button(self);
+    return;
+  }
+  if (self->flags[FLAGS_ISIMAGE]) {
+    if (!state.game_running) {
+      gameobject_setSprite(self, self->start_sprite_idx + 1);
+    } else
+      gameobject_setSprite(self, self->start_sprite_idx);
     return;
   }
 }

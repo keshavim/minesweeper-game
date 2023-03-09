@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 
 typedef struct {
-  bool down, pressed;
+  bool down, pressed, released;
 } Button;
 
 typedef struct {
@@ -53,9 +53,11 @@ typedef struct {
   u32 slot;
   char *filepath;
   u32 format;
-  vec2s size;
+  ivec2s size;
 } Texture;
 
+void texture_create(Texture *self, u32 width, u32 height);
+void texture_createv(Texture *self,ivec2s size);
 void texture_load(Texture *self, char *filepath);
 void texture_bind(Texture *self, u32 slot);
 void texture_unbind(Texture *self, u32 slot);
@@ -80,9 +82,25 @@ typedef struct {
 } Camera;
 
 void camera_init(Camera *self, vec3s position);
+void camera_setScale(Camera *self, u32 right, u32 top);
 
 void camera_update(Camera *self);
 
+typedef struct {
+  u32 fbo;
+  u32 rbo;
+  u32 vao;
+  u32 vbo;
+  u32 textureBuf;
+  Texture texBuf;
+  u32 postEffect;
+
+
+} FrameBuffer;
+
+void framebuffer_init(FrameBuffer *self);
+void framebuffer_render(FrameBuffer *self);
+void framebuffer_delete(FrameBuffer *self);
 // vertex attributes
 typedef struct {
   vec3s position;
@@ -90,6 +108,12 @@ typedef struct {
   vec2s texCoords;
   float texid;
 } Vertex;
+
+enum Shaders{
+  SHADER_PRE = 0,
+  SHADER_POST,
+  SHADER_COUNT
+};
 
 // batch renderer
 typedef struct {
@@ -103,7 +127,8 @@ typedef struct {
   u32 numObjects;
   u32 maxObjects;
 
-  Shader shader;
+  Shader shaders[SHADER_COUNT];
+  FrameBuffer framebuffer;
   vec4s clear_color;
 } BatchRenderer;
 
@@ -115,5 +140,6 @@ void batcher_replaceInBatch(BatchRenderer *self, size_t offset, vec3s position,
 void batcher_render(BatchRenderer *self);
 void batcher_clear(BatchRenderer *self);
 void batcher_delete(BatchRenderer *self);
+
 
 #endif // GFX_H

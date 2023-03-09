@@ -1,6 +1,14 @@
 #include "gfx.h"
 
-void camera_init(Camera *self, vec3s position) { self->position = position; }
+void camera_init(Camera *self, vec3s position) { 
+  self->position = position; 
+  self->orthoRight = 100;
+  self->orthoTop = 100;
+}
+void camera_setScale(Camera *self, u32 right, u32 top){
+  self->orthoRight = right;
+  self->orthoTop = top;
+}
 
 void camera_update(Camera *self) {
 
@@ -8,8 +16,7 @@ void camera_update(Camera *self) {
 
   self->viewMat = glms_mat4_identity();
   self->projMat = glms_mat4_identity();
-  self->orthoRight = 100;
-  self->orthoTop = 100;
+  
 
   self->viewMat = glms_lookat(
       (vec3s){{self->position.x, self->position.y, 20.0}},

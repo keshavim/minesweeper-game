@@ -1,5 +1,29 @@
 #include "gfx.h"
 
+void texture_create(Texture *self, u32 width, u32 height){
+  *self = (Texture){.filepath = NULL, .format = GL_RGB, .size = (ivec2s){{width, height}},};
+
+  glCreateTextures(GL_TEXTURE_2D, 1, &self->id);
+  glBindTexture(GL_TEXTURE_2D, self->id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+               GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+void texture_createv(Texture *self, ivec2s size){
+  *self = (Texture){.filepath = NULL, .format = GL_RGB, .size = size,};
+
+  glCreateTextures(GL_TEXTURE_2D, 1, &self->id);
+  glBindTexture(GL_TEXTURE_2D, self->id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0,
+               GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void texture_load(Texture *self, char *filepath) {
   *self = (Texture){0};
 
@@ -16,7 +40,7 @@ void texture_load(Texture *self, char *filepath) {
 
   self->filepath = filepath;
   self->format = channels == 3 ? GL_RGB : GL_RGBA;
-  self->size = (vec2s){{width, height}};
+  self->size = (ivec2s){{width, height}};
   glGenTextures(1, &self->id);
   glBindTexture(GL_TEXTURE_2D, self->id);
 

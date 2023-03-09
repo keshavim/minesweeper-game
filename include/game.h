@@ -3,7 +3,7 @@
 
 #include "gfx.h"
 
-#define MAX_OBJECTS 1000
+#define MAX_OBJECTS 10000
 
 #define ADJUSTED_CURSOR_POS                                                    \
   (vec2s) {                                                                    \
@@ -13,6 +13,9 @@
               (window.size.y / state.camera.orthoTop) * -1                     \
     }                                                                          \
   }
+
+
+enum Textures { TEX_GAME_SPRITES, TEX_BUTTONS, TEX_TEXTS, TEX_COUNT };
 // index of the sprite
 enum Sprites {
   SPRITE_BOMB_1 = 0,
@@ -27,22 +30,35 @@ enum Sprites {
   SPRITE_CELL_6,
   SPRITE_CELL_7,
   SPRITE_CELL_8,
-  SPRITE_CELL_CLOSED = 14,
+  SPRITE_HAPPY_FACE,
+  SPRITE_SAD_FACE,
+  SPRITE_CELL_CLOSED,
   SPRITE_CELL_OPENED,
-  SPRITE_COUNT
+  SPRITE_EASY_1,
+  SPRITE_EASY_2,
+  SPRITE_NORM_1,
+  SPRITE_NORM_2,
+  SPRITE_HARD_1,
+  SPRITE_HARD_2,
+  SPRITE_RESET_1,
+  SPRITE_RESET_2,
+  SPRITE_COUNT = 24
 };
 enum Flags {
   FLAGS_ISCELL = 0,
   FLAGS_CELL_OPENED,
   FLAGS_CELL_HASBOMB,
   FLAGS_CELL_FLAGED,
-  FLAGS_COUNT,
+  FLAGS_ISBUTTON,
+  FLAGS_ISIMAGE,
+  FLAGS_COUNT
 };
 
 typedef struct GameObject {
   vec3s position;
   vec2s size;
   SubTexture *sprite;
+  u32 start_sprite_idx;
   size_t batchOffset;
 
   //*for cells only
@@ -53,7 +69,7 @@ typedef struct GameObject {
   bool flags[FLAGS_COUNT];
 } GameObject;
 
-GameObject gameobject_create(vec3s pos, vec2s size, enum Sprites sprite_idx,
+GameObject gameobject_create(vec3s pos, vec2s size, u32 sprite_idx,
                              bool *flags);
 void gameobject_addToBatch(GameObject *self);
 void gameObject_update(GameObject *self);
@@ -74,13 +90,13 @@ typedef struct {
   Window *window;
   BatchRenderer renderer;
   Camera camera;
-  Texture texture;
+  Texture textureList[TEX_COUNT];
   SubTexture spriteList[SPRITE_COUNT];
 
   GameObject objList[MAX_OBJECTS];
   size_t objList_len;
   ivec2s board_size;
-  ivec2s board_offset;
+  vec2s board_offset;
   u32 numBombs;
   bool game_running;
 

@@ -6,7 +6,11 @@ void batcher_init(BatchRenderer *self, u32 maxObjects) {
   self->maxObjects = maxObjects;
   self->clear_color = (vec4s){{0.1, 0.1, 0.1, 1}};
 
-  self->shader = shader_create("assets/shaders/def.glsl");
+  DEBUG_LOG("%zu  %zu", sizeof(self->shaders[1]), sizeof(Shader));
+
+  self->shaders[SHADER_PRE] = shader_create("assets/shaders/pre_process.glsl");
+  self->shaders[SHADER_POST] =
+      shader_create("assets/shaders/post_process.glsl");
 
   u32 maxVertices = maxObjects * 4;
   u32 maxIndices = maxObjects * 6;
@@ -54,6 +58,8 @@ void batcher_init(BatchRenderer *self, u32 maxObjects) {
                GL_STATIC_DRAW);
 
   glBindVertexArray(0);
+
+  framebuffer_init(&self->framebuffer);
 }
 
 #define createVertex(v, p, sx, sy, tc, tid)                                    \
@@ -101,30 +107,67 @@ void batcher_replaceInBatch(BatchRenderer *self, size_t offset, vec3s position,
   glBufferSubData(GL_ARRAY_BUFFER, offset * sizeof(Vertex),
                   4 * sizeof(vertices), vertices);
 }
-void batcher_render(BatchRenderer *self) {
-  glClearColor(self->clear_color.x, self->clear_color.y, self->clear_color.z,
-               self->clear_color.w);
-  glClear(GL_COLOR_BUFFER_BIT);
-  shader_bind(&self->shader);
-  texture_bind(&state.texture, 0);
 
-  shader_setUniform_mat4(&self->shader, "u_viewMat", state.camera.viewMat);
-  shader_setUniform_mat4(&self->shader, "u_projMat", state.camera.projMat);
-  shader_setUniform_mat4(&self->shader, "u_modelMat", GLMS_MAT4_IDENTITY);
+static void __draw_scene(BatchRenderer *self) {
+  shader_bind(&self->shaders[SHADER_PRE]);
+  texture_bind(&state.textureList[TEX_GAME_SPRITES], 0);
+  texture_bind(&state.textureList[TEX_BUTTONS], 1);
+  texture_bind(&state.textureList[TEX_TEXTS], 2);
+
+  shader_setUniform_mat4(&self->shaders[SHADER_PRE], "u_viewMat",
+                         state.camera.viewMat);
+  shader_setUniform_mat4(&self->shaders[SHADER_PRE], "u_projMat",
+                         state.camera.projMat);
+  shader_setUniform_mat4(&self->shaders[SHADER_PRE], "u_modelMat",
+                         GLMS_MAT4_IDENTITY);
 
   glBindVertexArray(self->vao);
   glDrawElements(GL_TRIANGLES, self->numElements, GL_UNSIGNED_INT, 0);
 }
+
+void batcher_render(BatchRenderer *self) {
+  glBindFramebuffer(GL_FRAMEBUFFER, self->framebuffer.fbo);
+  glClearColor(self->clear_color.x, self->clear_color.y, self->clear_color.z,
+               self->clear_color.w);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+  __draw_scene(self);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  if(window.key[GLFW_KEY_1].down){
+    self->framebuffer.postEffect = 1;
+  }else if(window.key[GLFW_KEY_2].down){
+    self->framebuffer.postEffect = 2;
+  } else if(window.key[GLFW_KEY_3].down){
+    self->framebuffer.postEffect = 3;
+  }else if(window.key[GLFW_KEY_4].down){
+    self->framebuffer.postEffect = 4;
+  }else self->framebuffer.postEffect = 0;
+
+
+
+  shader_bind(&self->shaders[SHADER_POST]);
+  shader_setUniform1i(&self->shaders[SHADER_POST], "effect",
+                      self->framebuffer.postEffect);
+  framebuffer_render(&self->framebuffer);
+}
 void batcher_clear(BatchRenderer *self) {
-  self->numElements = 0;
-  self->numVertices = 0;
-  self->numObjects = 0;
+
   glBindVertexArray(self->vao);
   glBindBuffer(GL_ARRAY_BUFFER, self->vbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, self->numVertices * sizeof(Vertex), NULL);
+  self->numElements = 0;
+  self->numVertices = 0;
+  self->numObjects = 0;
 }
 void batcher_delete(BatchRenderer *self) {
-  shader_delete(&self->shader);
+  for (u32 i = 0; i < SHADER_COUNT; i++) {
+    shader_delete(&self->shaders[i]);
+  }
+  framebuffer_delete(&self->framebuffer);
 
   glDeleteVertexArrays(1, &self->vao);
   glDeleteBuffers(1, &self->vbo);

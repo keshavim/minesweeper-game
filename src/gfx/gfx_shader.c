@@ -3,7 +3,7 @@
 static char *_readFile(char *filepath) {
   FILE *file = fopen(filepath, "rb");
   if (!file) {
-    perror("gfx_shader");
+    DEBUG_LOG("shader file reading: %s",strerror(errno));
     exit(1);
   }
   fseek(file, 0, SEEK_END);
